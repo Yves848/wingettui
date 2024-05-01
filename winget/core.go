@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type WingetItem struct {
+type WingetPackage struct {
 	AvailableVersions string `json:"AvailableVersions"`
 	Id                string `json:"Id"`
 	Source            string `json:"Source"`
@@ -18,7 +18,7 @@ type WingetItem struct {
 }
 
 type WingetPackages struct {
-	Packages []WingetItem `json:"packages"`
+	Packages []WingetPackage `json:"packages"`
 }
 
 func Invoke(command string) (res []byte, err error) {
@@ -50,7 +50,7 @@ func Invoke(command string) (res []byte, err error) {
 	return result, err
 }
 
-func Winget2Json(out string) (items WingetPackages, err error) {
+func Package2Json(out string) (items WingetPackages, err error) {
 	// fmt.Println(out)
 	js := "{\"packages\":" + out + "}"
 	err = json.Unmarshal([]byte(js), &items)
