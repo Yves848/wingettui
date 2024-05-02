@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -15,14 +16,16 @@ import (
 )
 
 func PadOrTruncateString(input string, width int) string {
-	if len(input) >= width {
+	buffer := strings.TrimSpace(input)
+	fmt.Printf("%d %d\n", len(buffer), width)
+	if len(buffer) >= width {
 		// If the input string is longer than or equal to the width,
 		// truncate it and append an ellipsis.
-		return input[:width-3] + "…"
+		return buffer[:width-1] + "…"
 	} else {
 		// If the input string is shorter than the width,
 		// pad it with spaces.
-		return input + strings.Repeat(" ", width-len(input))
+		return buffer + strings.Repeat(" ", width-len(buffer))
 	}
 }
 
@@ -32,10 +35,7 @@ func main() {
 	if err2 == nil {
 		fmt.Println("Current Size is ", s.Width, "x", s.Height)
 	}
-	colWidths := make(map[string]int)
-	colWidths["Name"] = 40
-	colWidths["Id"] = 40
-	colWidths["Version"] = 10
+	colWidths := []int{40, 40, 20}
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
 	listSource := listCmd.String("source", "", "source of the package")
 
@@ -86,7 +86,13 @@ func main() {
 		for _, item := range items.Packages {
 			versions := strings.Split(item.AvailableVersions, " ")
 			// fmt.Printf("%s %s %s %s\n", item.Id, item.Name, item.InstalledVersion, versions[0])
-			rows = append(rows, []string{item.Name, item.Id, versions[0]})
+			w1 := int(math.Floor(float64(s.Width) / float64(100) * float64(colWidths[0])))
+			w2 := int(math.Floor(float64(s.Width) / float64(100) * float64(colWidths[1])))
+			w3 := int(math.Floor(float64(s.Width) / float64(100) * float64(colWidths[2])))
+			// fmt.Printf("%d %d %d\n", w1, w2, w3)
+			rows = append(rows, []string{PadOrTruncateString(item.Name, w1),
+				PadOrTruncateString(item.Id, w2),
+				PadOrTruncateString(versions[0], w3)})
 		}
 		HeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 		EvenRowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
@@ -95,14 +101,19 @@ func main() {
 			Border(lipgloss.NormalBorder()).
 			BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("99"))).
 			StyleFunc(func(row, col int) lipgloss.Style {
+				var style lipgloss.Style
 				switch {
 				case row == 0:
 					return HeaderStyle
 				case row%2 == 0:
-					return EvenRowStyle
+					style = EvenRowStyle
 				default:
-					return OddRowStyle
+					style = OddRowStyle
 				}
+				w := colWidths[col]
+				w = (s.Width / 100 * w)
+				style = style.Width(w)
+				return style
 			}).
 			Headers("Name", "Id", "Version").
 			Width(s.Width).
